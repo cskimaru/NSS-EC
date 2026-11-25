@@ -1,0 +1,91 @@
+version: "3.8"
+
+# NSS-EC SeaweedFS Infrastructure
+# Three independent S3-compatible endpoints simulating AWS/GCP/Azure
+# Replace MinIO — same port layout, same credentials, same boto3 client code
+#
+# Ports:
+#   8333 → AWS/Japan   (master)
+#   8334 → GCP/APAC    (volume 1)
+#   8335 → Azure/US    (volume 2)
+#
+# Author: Noah Kimaru | Kyoto Institute of Technology | 2026
+
+services:
+
+  # Shared master for all three filer instances
+  seaweed-master:
+    image: chrislusf/seaweedfs:3.68
+    container_name: nss-master
+    command: master -mdir=/data -volumeSizeLimitMB=10000
+    ports:
+      - "9333:9333"
+    volumes:
+      - seaweed-master:/data
+    restart: unless-stopped
+
+  # AWS / Japan endpoint — port 8333
+  seaweed-aws:
+    image: chrislusf/seaweedfs:3.68
+    container_name: nss-aws
+    depends_on: [seaweed-master]
+    command: >
+      server
+      -master=seaweed-master:9333
+      -s3
+      -s3.port=8333
+      -s3.config=/config/s3.json
+      -dir=/data/aws
+      -volume.max=10
+    ports:
+      - "8333:8333"
+    volumes:
+      - seaweed-aws:/data/aws
+      - ./s3.json:/config/s3.json:ro
+    restart: unless-stopped
+
+  # GCP / APAC endpoint — port 8334
+  seaweed-gcp:
+    image: chrislusf/seaweedfs:3.68
+    container_name: nss-gcp
+    depends_on: [seaweed-master]
+    command: >
+      server
+      -master=seaweed-master:9333
+      -s3
+      -s3.port=8334
+      -s3.config=/config/s3.json
+      -dir=/data/gcp
+      -volume.max=10
+    ports:
+      - "8334:8334"
+    volumes:
+      - seaweed-gcp:/data/gcp
+      - ./s3.json:/config/s3.json:ro
+    restart: unless-stopped
+
+  # Azure / US endpoint — port 8335
+  seaweed-azure:
+    image: chrislusf/seaweedfs:3.68
+    container_name: nss-azure
+    depends_on: [seaweed-master]
+    command: >
+      server
+      -master=seaweed-master:9333
+      -s3
+      -s3.port=8335
+      -s3.config=/config/s3.json
+      -dir=/data/azure
+      -volume.max=10
+    ports:
+      - "8335:8335"
+    volumes:
+      - seaweed-azure:/data/azure
+      - ./s3.json:/config/s3.json:ro
+    restart: unless-stopped
+
+volumes:
+  seaweed-master:
+  seaweed-aws:
+  seaweed-gcp:
+  seaweed-azure:

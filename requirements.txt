@@ -1,0 +1,7 @@
+zfec==1.5.7.4
+cryptography>=42.0.0
+boto3>=1.34.0
+botocore>=1.34.0
+psutil>=5.9.0
+numpy>=1.26.0
+aioquic>=1.0.0
